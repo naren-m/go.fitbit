@@ -3,11 +3,12 @@ package fitbit
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"strings"
+
 	"github.com/mrjones/oauth"
-    "log"
-    "io/ioutil"
-    "os"
-    "strings"
 )
 
 const (
@@ -93,48 +94,48 @@ func (api *Fitbit) NewClient() (*Client, error) {
 	//Set OAuth consumer to debug
 	oauthConsumer.Debug(api.config.Debug)
 
-    //Add to client
-    c.oc = oauthConsumer
+	//Add to client
+	c.oc = oauthConsumer
 
-    var oauth_creds_file string = fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".fitbit-oauth")
-    if _, err := os.Stat(oauth_creds_file); err == nil {
-        contents,_ := ioutil.ReadFile(oauth_creds_file)
-        keys := strings.Split(string(contents), "\n");
-        c.accessToken = &oauth.AccessToken{
-            Token:  keys[0],
-            Secret: keys[1],
-        }
-    } else {
+	var oauth_creds_file string = fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".fitbit-oauth")
+	if _, err := os.Stat(oauth_creds_file); err == nil {
+		contents, _ := ioutil.ReadFile(oauth_creds_file)
+		keys := strings.Split(string(contents), "\n")
+		c.accessToken = &oauth.AccessToken{
+			Token:  keys[0],
+			Secret: keys[1],
+		}
+	} else {
 
-        // //Get request tokenURL
-        requestToken, url, err := oauthConsumer.GetRequestTokenAndUrl("oob")
-        if err != nil {
-            return nil, err
-        }
+		// //Get request tokenURL
+		requestToken, url, err := oauthConsumer.GetRequestTokenAndUrl("oob")
+		if err != nil {
+			return nil, err
+		}
 
-        fmt.Println("(1) Go to: " + url)
-        fmt.Println("(2) Enter the verification code: ")
+		fmt.Println("(1) Go to: " + url)
+		fmt.Println("(2) Enter the verification code: ")
 
-        verificationCode := ""
-        fmt.Scanln(&verificationCode)
+		verificationCode := ""
+		fmt.Scanln(&verificationCode)
 
-        accessToken, err := oauthConsumer.AuthorizeToken(requestToken, verificationCode)
-        if err != nil {
-            return nil, err
-        }
-        c.accessToken = accessToken
+		accessToken, err := oauthConsumer.AuthorizeToken(requestToken, verificationCode)
+		if err != nil {
+			return nil, err
+		}
+		c.accessToken = accessToken
 
-        log.Printf("accessToken >> %s\n", accessToken.Token)
-        log.Printf("accessSecret >> %s\n", accessToken.Secret)
+		log.Printf("accessToken >> %s\n", accessToken.Token)
+		log.Printf("accessSecret >> %s\n", accessToken.Secret)
 
-        contents := fmt.Sprintf("%s\n%s", accessToken.Token, accessToken.Secret);
-        ioutil.WriteFile(oauth_creds_file, []byte(contents), 0x777)
+		contents := fmt.Sprintf("%s\n%s", accessToken.Token, accessToken.Secret)
+		ioutil.WriteFile(oauth_creds_file, []byte(contents), 0x777)
 
-        c.accessToken = &oauth.AccessToken{
-            Token:  accessToken.Token,
-            Secret: accessToken.Secret,
-        }
-    }
+		c.accessToken = &oauth.AccessToken{
+			Token:  accessToken.Token,
+			Secret: accessToken.Secret,
+		}
+	}
 
 	return c, nil
 }
@@ -180,4 +181,3 @@ func (c *Client) setUserID(userID string) error {
 
 	return nil
 }
-
